@@ -1,4 +1,5 @@
 import Ember from 'ember';
+import ENV from "client/config/environment";
 
 function getHashParams() {
   var hashParams = {};
@@ -12,17 +13,18 @@ function getHashParams() {
 
 export default Ember.Route.extend({
   model() {
+    console.log(ENV);
     var params = getHashParams();
     if (params.access_token !== undefined) {
       return $.getJSON('http://localhost:8000/api/v1/spotify/me?access_token='+params.access_token).then(function(response){
-        
+
       });
     }
   },
   actions: {
     login() {
-      var CLIENT_ID = '4352ff0df1ed44599107b6b1eea51bbc';
-      var REDIRECT_URI = 'http://localhost:4200';
+      var CLIENT_ID = ENV.SPOTIFY_CLIENT_ID;
+      var REDIRECT_URI = ENV.SPOTIFY_REDIRECT_URI;
 
       function getLoginURL(scopes) {
         return 'https://accounts.spotify.com/authorize?client_id=' + CLIENT_ID +
