@@ -7,8 +7,19 @@ $roboto-font-path: '../assets/';
 // ember-cli-materialize styles
 @import 'ember-cli-materialize';
 
-#login-container {
-  padding-top: 50px;
-  text-align: center;
+.circle {
+  height: 40px;
+  width: 40px;
   vertical-align: middle;
+  margin-left: 10px;
+}
+
+.fixed-floating {
+  position: absolute;
+  right: 35px;
+  bottom: 35px;
+}
+
+[data-ember-action] {
+  cursor: pointer;
 }

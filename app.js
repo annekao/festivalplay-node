@@ -34,7 +34,7 @@ app.get('/api/v1/spotify/me', function(req, res) {
       }
     })
     .spread(function(user, created) {
-      
+      res.send(user);
     });
   });
 

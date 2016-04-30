@@ -1,9 +1,30 @@
 {{outlet}}
 
-<div id="login-container">
-{{md-btn action='login'
-    text='Login to Spotify'
-    class='green darken-2 white-text'}}
-</div>
 
-<div id="home-container" ></div>
+<div id="home-container"></div>
+
+{{#md-btn
+    action='openModal'
+    buttonType='floating'
+    class='btn-large fixed-floating'}}
+    <i class="material-icons left">playlist_add</i>
+{{/md-btn}}
+
+{{#if isModalOpen}}
+    {{#md-modal close='closeModal' class="test-modal"}}
+        <div class="modal-content">
+            <h4>Ohai there!</h4>
+            <p>Star ember-cli-materialize if you love it on
+                <a href="https://github.com/truenorth/ember-cli-materialize">github</a>!
+            </p>
+        </div>
+        <div class="modal-footer">
+            <a class="modal-action modal-close waves-effect waves-orange btn-flat agree-button" {{action 'agree'}}>
+                Done!
+            </a>
+            <a class="modal-action modal-close waves-effect waves-red btn-flat cancel-button" {{action 'closeModal'}}>
+                Cancel
+            </a>
+        </div>
+    {{/md-modal}}
+{{/if}}

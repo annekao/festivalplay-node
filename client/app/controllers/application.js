@@ -1,26 +1,7 @@
 import Ember from 'ember';
 import ENV from "client/config/environment";
 
-function getHashParams() {
-  var hashParams = {};
-  var e, r = /([^&;=]+)=?([^&;]*)/g,
-    q = window.location.hash.substring(1);
-  while ( e = r.exec(q)) {
-    hashParams[e[1]] = decodeURIComponent(e[2]);
-  }
-  return hashParams;
-}
-
-export default Ember.Route.extend({
-  model() {
-    console.log(ENV);
-    var params = getHashParams();
-    if (params.access_token !== undefined) {
-      return $.getJSON('http://localhost:8000/api/v1/spotify/me?access_token='+params.access_token).then(function(response){
-
-      });
-    }
-  },
+export default Ember.Controller.extend({
   actions: {
     login() {
       var CLIENT_ID = ENV.SPOTIFY_CLIENT_ID;
@@ -41,5 +22,4 @@ export default Ember.Route.extend({
       window.location.replace(url);
     }
   }
-
 });

@@ -1,5 +1,12 @@
-{{#md-navbar name='FESTIVAL PLAY' class='navigation green lighten-2'}}
-
+{{#md-navbar name='FESTIVAL PLAY' class='navigation pink darken-4'}}
+    {{#if model}}
+        {{#link-to 'user' model.id tagname='li'}}
+            {{model.username}}
+            <img src='{{model.image_url}}' class='circle'>
+        {{/link-to}}
+    {{else}}
+        <li {{action 'login'}}>Login to Spotify</li>
+    {{/if}}
 {{/md-navbar}}
 {{outlet}}
 
