@@ -82,7 +82,7 @@ export default Ember.Controller.extend({
       this.set('creating', true);
       this.set('step4', false);
 
-      this.set('progress', 'Finding artists and their top ' + this.get('range') + ' tracks...');
+      this.set('progress', 'Searching for artists in Spotify...');
 
       this.get('selectedArtists').forEach(function(artist) {
         $.getJSON('http://localhost:8000/api/v1/spotify/search?q='+artist)
@@ -93,6 +93,9 @@ export default Ember.Controller.extend({
             }
           }.bind(this));
       }.bind(this));
+
+      this.set('progress', 'Finding the top ' + this.get('range') + ' tracks for each artist...');
+      this.set('progress', 'Creating playlist...');
     }
   }
 });

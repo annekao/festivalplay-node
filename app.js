@@ -5,6 +5,8 @@ var request = require('request');
 var bodyParser = require('body-parser');
 var app = express();
 
+var artist_ids = [];
+
 var User = require('./models/user');
 
 app.use(bodyParser.json()); // for parsing application/json
@@ -77,7 +79,6 @@ app.get('/api/v1/seatgeek/events', function(req, res) {
 
 app.get('/api/v1/spotify/search', function(req, res) {
   var query = req.query.q;
-  var artist_id = undefined;
   var error_msg = undefined;
 
   request('https://api.spotify.com/v1/search?q='+query+'&type=artist', function(err, resp, body) {
@@ -86,11 +87,10 @@ app.get('/api/v1/spotify/search', function(req, res) {
     if (data.artists.items.length == 0) {
       error_msg = query + " not found in Spotify!";
     } else {
-      artist_id = data.artists.items[0].id;
+      artist_ids.push(data.artists.items[0].id);
     }
 
     res.send({
-      artistId: artist_id,
       error: error_msg
     });
   });
