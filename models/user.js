@@ -2,7 +2,7 @@ var sequelize = require('./../config/sequelize');
 var Sequelize = require('sequelize');
 
 module.exports = sequelize.define('user', {
-  name: {
+  username: {
     type: Sequelize.STRING,
     field: 'username'
   },
@@ -10,13 +10,9 @@ module.exports = sequelize.define('user', {
     type: Sequelize.STRING,
     field: 'spotify_page'
   },
-  image: {
+  image_url: {
     type: Sequelize.STRING,
     field: 'image_url'
-  },
-  playlists: {
-    type: Sequelize.ARRAY(Sequelize.STRING),
-    field: 'playlist_urls'
   }
 }, {
   timestamps: false

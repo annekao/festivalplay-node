@@ -5,6 +5,8 @@ var request = require('request');
 var bodyParser = require('body-parser');
 var app = express();
 
+var User = require('./models/user');
+
 app.use(bodyParser.json()); // for parsing application/json
 
 app.all('*', function(req, res, next) {
@@ -23,9 +25,17 @@ app.get('/api/v1/spotify/me', function(req, res) {
     }
   }
   request(options, function(err, resp, body) {
-    body = JSON.parse(body);
-    console.log(body);
-    res.send(body);
+    var data = JSON.parse(body);
+    User.findOrCreate({
+      where: {
+        username: data.id,
+        spotify_page: data.external_urls.spotify,
+        image_url: data.images[0].url,
+      }
+    })
+    .spread(function(user, created) {
+      
+    });
   });
 
 });
