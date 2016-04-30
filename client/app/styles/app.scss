@@ -58,6 +58,10 @@ $roboto-font-path: '../assets/';
   color: black;
 }
 
+.input-adjust {
+  margin-top: -5px;
+}
+
 [data-ember-action] {
   cursor: pointer;
 }

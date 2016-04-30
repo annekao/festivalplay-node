@@ -84,5 +84,40 @@
                 </a>
             </div>
         {{/if}}
+
+        {{#if step4}}
+            <form {{action 'createPlaylist' on="submit"}}>
+                <div class="modal-content">
+                    <h4>Step 4: Settings</h4>
+                    Playlist title:
+                    {{md-input class="col s12 input-adjust" value=selectedEvent.title validate=true required=true}}
+                    Number of songs per artist:
+                    <p class="range-field">
+                        {{input value=range type="range" min="1" max="10" }}
+                    </p>
+                </div>
+                <div class="modal-footer">
+                    <button class="modal-action modal-close waves-effect waves-green btn-flat agree-button" type="submit">
+                        Create Playlist
+                    </button>
+                    <a class="modal-action modal-close waves-effect waves-blue btn-flat cancel-button" {{action 'step3'}}>
+                        Back
+                    </a>
+                    <a class="modal-action modal-close waves-effect waves-red btn-flat cancel-button" {{action 'closeModal'}}>
+                        Cancel
+                    </a>
+                </div>
+            </form>
+        {{/if}}
+
+        {{#if creating}}
+            <div class="modal-content">
+                <h4>{{progress}}</h4>
+                {{md-loader}}
+                {{#if errors}}
+                    {{errorMessages}}
+                {{/if}}
+            </div>
+        {{/if}}
     {{/md-modal}}
 {{/if}}

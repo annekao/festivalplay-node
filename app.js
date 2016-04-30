@@ -75,6 +75,28 @@ app.get('/api/v1/seatgeek/events', function(req, res) {
 
 });
 
+app.get('/api/v1/spotify/search', function(req, res) {
+  var query = req.query.q;
+  var artist_id = undefined;
+  var error_msg = undefined;
+
+  request('https://api.spotify.com/v1/search?q='+query+'&type=artist', function(err, resp, body) {
+    var data = JSON.parse(body);
+
+    if (data.artists.items.length == 0) {
+      error_msg = query + " not found in Spotify!";
+    } else {
+      artist_id = data.artists.items[0].id;
+    }
+
+    res.send({
+      artistId: artist_id,
+      error: error_msg
+    });
+  });
+
+});
+
 app.listen(8000, function() {
   console.log('Listening on port 8000');
 });

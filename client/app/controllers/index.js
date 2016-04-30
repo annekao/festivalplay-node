@@ -9,6 +9,12 @@ export default Ember.Controller.extend({
   step1: true,
   step2: false,
   step3: false,
+  step4: false,
+  range: 6,
+  creating: false,
+  progress: '',
+  errors: false,
+  errorMessages: [],
 
   actions: {
     openModal() {
@@ -27,6 +33,7 @@ export default Ember.Controller.extend({
     step1() {
       this.set('step1', true);
       this.set('step2', false);
+      this.set('selectedEvent', '');
     },
 
     step2() {
@@ -58,15 +65,34 @@ export default Ember.Controller.extend({
       } else {
         this.set('step3', true);
         this.set('step2', false);
+        this.set('step4', false);
         this.get('selectedEvent').artists.forEach(function(artist) {
-          var genre = '';
-          if (artist.genres) {
-            genre = ' (' + artist.genres[0].name + ')';
-          }
-          this.get('artistResults').addObject(artist.name + genre);
-          this.get('selectedArtists').addObject(artist.name + genre);
+          this.get('artistResults').addObject(artist.name);
+          this.get('selectedArtists').addObject(artist.name);
         }.bind(this));
       }
+    },
+
+    step4() {
+      this.set('step4', true);
+      this.set('step3', false);
+    },
+
+    createPlaylist() {
+      this.set('creating', true);
+      this.set('step4', false);
+
+      this.set('progress', 'Finding artists and their top ' + this.get('range') + ' tracks...');
+
+      this.get('selectedArtists').forEach(function(artist) {
+        $.getJSON('http://localhost:8000/api/v1/spotify/search?q='+artist)
+          .then(function(response){
+            if (response.error) {
+              this.set('errors', true);
+              this.get('errorMessages').addObject(response.error);
+            }
+          }.bind(this));
+      }.bind(this));
     }
   }
 });
