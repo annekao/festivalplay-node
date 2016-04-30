@@ -12,7 +12,7 @@ function getHashParams() {
 
 function setAccessToken(token) {
   localStorage.setItem('access_token', token);
-  localStorage.setItem('access_token_expires', (new Date()).getTime() + 3600*1000); // 1 hour
+  localStorage.setItem('access_token_expires', (new Date()).getTime() + 360*1000); // 1 hour
 }
 
 export default Ember.Route.extend({

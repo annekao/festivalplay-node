@@ -35,16 +35,48 @@
         {{#if step2}}
             <div class="modal-content">
                 <h4>Step 2: Select an event</h4>
-                <div class="input-field">
-                    <i class="material-icons input-search">search</i>
-                    <input id="search" type="search" required>
-                </div>
+                {{#if eventResults}}
+                    {{#md-collection content=eventResults as |event index|}}
+                        <div class='collection-item avatar {{if event.selected 'active'}}' {{action 'selectEvent' event}}>
+                            <span class="title">{{event.title}}</span>
+                            <p>{{event.date}}<br>{{event.location}}</p>
+                        </div>
+                    {{/md-collection}}
+                {{else}}
+                    {{md-loader}}
+                {{/if}}
             </div>
             <div class="modal-footer">
                 <a class="modal-action modal-close waves-effect waves-green btn-flat agree-button" {{action 'step3'}}>
                     Next
                 </a>
                 <a class="modal-action modal-close waves-effect waves-blue btn-flat cancel-button" {{action 'step1'}}>
+                    Back
+                </a>
+                <a class="modal-action modal-close waves-effect waves-red btn-flat cancel-button" {{action 'closeModal'}}>
+                    Cancel
+                </a>
+            </div>
+        {{/if}}
+
+        {{#if step3}}
+            <div class="modal-content">
+                <h4>Step 3: Select the artists</h4>
+                <div class="artists">
+                    {{#if artistResults}}
+                        {{md-checks
+                        selection=selectedArtists
+                        content=artistResults}}
+                    {{else}}
+                        {{md-loader}}
+                    {{/if}}
+                </div>
+            </div>
+            <div class="modal-footer">
+                <a class="modal-action modal-close waves-effect waves-green btn-flat agree-button" {{action 'step4'}}>
+                    Next
+                </a>
+                <a class="modal-action modal-close waves-effect waves-blue btn-flat cancel-button" {{action 'step2'}}>
                     Back
                 </a>
                 <a class="modal-action modal-close waves-effect waves-red btn-flat cancel-button" {{action 'closeModal'}}>

@@ -26,6 +26,12 @@ app.get('/api/v1/spotify/me', function(req, res) {
   }
   request(options, function(err, resp, body) {
     var data = JSON.parse(body);
+
+    if (body.error) {
+      console.log(body);
+      res.send(body);
+    }
+
     User.findOrCreate({
       where: {
         username: data.id,
@@ -44,7 +50,27 @@ app.get('/api/v1/seatgeek/events', function(req, res) {
   var query = req.query.q;
 
   request('https://api.seatgeek.com/2/events?q='+query, function(err, resp, body) {
-    res.send(body);
+    var data = JSON.parse(body);
+    var events = [];
+
+    data.events.forEach(function(event) {
+      if (event.title.toLowerCase().includes(query)) {
+        var date = new Date(event.datetime_utc);
+        var months = ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December'];
+        var days = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
+
+        events.push({
+          id: event.id,
+          title: event.title,
+          date: days[date.getDay()] + ', ' + months[date.getMonth()] + ' ' + date.getDate() + ', ' + date.getFullYear(),
+          location: event.venue.display_location,
+          artists: event.performers,
+          selected: false
+        });
+      }
+    });
+
+    res.send(events);
   });
 
 });

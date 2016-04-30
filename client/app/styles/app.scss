@@ -26,6 +26,38 @@ $roboto-font-path: '../assets/';
   left: 10px;
 }
 
+.collection .collection-item.avatar {
+  padding-left: 20px;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+  overflow: hidden;
+}
+
+.collection-item:hover {
+  background-color: rgba(0, 160, 150, .2);
+}
+
+.artists {
+  -moz-column-count: 2;
+  -moz-column-gap: 20px;
+  -webkit-column-count: 2;
+  -webkit-column-gap: 20px;
+  column-count: 2;
+  column-gap: 20px;
+}
+
+.materialize-checkbox {
+  margin-top: -10px;
+}
+
+[type="checkbox"]:not(:checked), [type="checkbox"]:checked {
+  position: relative;
+}
+
+[type="checkbox"] + label {
+  color: black;
+}
+
 [data-ember-action] {
   cursor: pointer;
 }
