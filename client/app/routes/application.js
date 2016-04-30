@@ -12,7 +12,7 @@ function getHashParams() {
 
 function setAccessToken(token) {
   localStorage.setItem('access_token', token);
-  localStorage.setItem('access_token_expires', (new Date()).getTime() + 3600); // 1 hour
+  localStorage.setItem('access_token_expires', (new Date()).getTime() + 3600*1000); // 1 hour
 }
 
 export default Ember.Route.extend({
@@ -24,6 +24,11 @@ export default Ember.Route.extend({
           setAccessToken(params.access_token);
           return response;
       });
+    } else if((new Date()).getTime() < localStorage.getItem('access_token_expires')) {
+      return $.getJSON('http://localhost:8000/api/v1/spotify/me?access_token='+localStorage.getItem('access_token'))
+        .then(function(response){
+          return response;
+        });
     } else {
       return undefined;
     }

@@ -40,6 +40,15 @@ app.get('/api/v1/spotify/me', function(req, res) {
 
 });
 
+app.get('/api/v1/seatgeek/events', function(req, res) {
+  var query = req.query.q;
+
+  request('https://api.seatgeek.com/2/events?q='+query, function(err, resp, body) {
+    res.send(body);
+  });
+
+});
+
 app.listen(8000, function() {
   console.log('Listening on port 8000');
 });

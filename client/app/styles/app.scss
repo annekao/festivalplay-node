@@ -20,6 +20,12 @@ $roboto-font-path: '../assets/';
   bottom: 35px;
 }
 
+.input-search {
+  position: absolute;
+  top: 10px;
+  left: 10px;
+}
+
 [data-ember-action] {
   cursor: pointer;
 }
