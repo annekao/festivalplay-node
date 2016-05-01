@@ -61,6 +61,12 @@ app.post('/api/v1/spotify/me', function(req, res) {
 
 });
 
+app.get('/api/v1/playlists', function(req, res) {
+  Playlist.findAll().then(function(playlists) {
+    res.send(playlists);
+  });
+});
+
 app.get('/api/v1/seatgeek/events', function(req, res) {
   var query = req.query.q;
 
