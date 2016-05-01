@@ -39,7 +39,7 @@
                     {{#md-collection content=eventResults as |event index|}}
                         <div class='collection-item avatar {{if event.selected 'active'}}' {{action 'selectEvent' event}}>
                             <span class="title">{{event.title}}</span>
-                            <p>{{event.date}}<br>{{event.location}}</p>
+                            <p>{{event.readableDate}}<br>{{event.location}}</p>
                         </div>
                     {{/md-collection}}
                 {{else}}
@@ -92,7 +92,7 @@
                     <h4>Step 4: Settings</h4>
                     Playlist title:
                     {{md-input class="col s12 input-adjust" value=playlistTitle validate=true required=true}}
-                    Number of songs per artist:
+                    Number of songs per artist: {{range}}
                     <p class="range-field">
                         {{input value=range type="range" min="1" max="10" }}
                     </p>

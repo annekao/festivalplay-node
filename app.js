@@ -13,6 +13,7 @@ var artists = [];
 var trackIds = [];
 
 var User = require('./models/user');
+var Event = require('./models/event');
 var Playlist = require('./models/playlist');
 
 app.use(bodyParser.json()); // for parsing application/json
@@ -76,7 +77,8 @@ app.get('/api/v1/seatgeek/events', function(req, res) {
         events.push({
           id: event.id,
           title: event.title,
-          date: days[date.getDay()] + ', ' + months[date.getMonth()] + ' ' + date.getDate() + ', ' + date.getFullYear(),
+          date: event.datetime_utc,
+          readableDate: days[date.getDay()] + ', ' + months[date.getMonth()] + ' ' + date.getDate() + ', ' + date.getFullYear(),
           location: event.venue.display_location,
           artists: event.performers,
           selected: false
@@ -141,13 +143,10 @@ app.get('/api/v1/spotify/artists/top-tracks', function(req, res) {
   });
 });
 
-app.post('/test', function(req,res) {
-  res.send(req.body);
-}) ;
-
 app.post('/api/v1/spotify/users/playlists', function(req, res) {
-  var playlistTitle = decodeURI(req.query.title);
-  var eventTitle = decodeURI(req.query.event);
+  var playlistTitle = decodeURIComponent(req.query.title);
+  var eventTitle = decodeURIComponent(req.query.event);
+  console.log(req.query);
 
   var options= {
     method: 'POST',
@@ -168,18 +167,28 @@ app.post('/api/v1/spotify/users/playlists', function(req, res) {
       return;
     }
 
-    Playlist.create({
-        user_id: userId,
-        title: playlistTitle,
-        event_title: eventTitle,
-        playlist_id: data.id,
-        playlist_url: data.href
+    Event.findOrCreate({
+        where: {
+          title: eventTitle
+        },
+        defaults: {
+          date: decodeURIComponent(req.query.date),
+          location: decodeURIComponent(req.query.location)
+        }
       })
-      .then(function(playlist) {
-        res.send(playlist);
+      .spread(function(event, created) {
+        Playlist.create({
+            user_id: userId,
+            title: playlistTitle,
+            event_id: event.id,
+            playlist_id: data.id,
+            playlist_url: data.href
+          })
+          .then(function(playlist) {
+            res.send(playlist);
+          });
       });
   });
-
 });
 
 app.post('/api/v1/spotify/users/playlists/tracks', function(req, res) {

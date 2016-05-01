@@ -10,9 +10,9 @@ module.exports = sequelize.define('playlist', {
     type: Sequelize.STRING,
     field: 'title'
   },
-  event_title: {
+  event_id: {
     type: Sequelize.STRING,
-    field: 'event_title'
+    field: 'event_id'
   },
   playlist_id: {
     type: Sequelize.STRING,

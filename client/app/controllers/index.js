@@ -30,20 +30,20 @@ export default Ember.Controller.extend({
     closeModal() {
       if(this.get('complete')) {
         // reset form
-        this.set(eventResults, []);
-        this.set(selectedEvent, '');
-        this.set(artistResults, []);
-        this.set(selectedArtists, []);
-        this.set(step1, true);
-        this.set(step2, false);
-        this.set(step3, false);
-        this.set(step4, false);
-        this.set(playlistTitle, '');
-        this.set(range, 6);
-        this.set(creating, false);
-        this.set(progress, '');
-        this.set(complete, false);
-        this.set(errorMessages, []);
+        this.set('eventResults', []);
+        this.set('selectedEvent', '');
+        this.set('artistResults', []);
+        this.set('selectedArtists', []);
+        this.set('step1', true);
+        this.set('step2', false);
+        this.set('step3', false);
+        this.set('step4', false);
+        this.set('playlistTitle', '');
+        this.set('range', 6);
+        this.set('creating', false);
+        this.set('progress', '');
+        this.set('complete', false);
+        this.set('errorMessages', []);
       }
       this.set('isModalOpen', false);
     },
@@ -108,6 +108,8 @@ export default Ember.Controller.extend({
       var promises = [];
       var playlistTitle = this.get('playlistTitle');
       var event = this.get('selectedEvent').title;
+      var date =this.get('selectedEvent').date;
+      var location = this.get('selectedEvent').location;
 
       this.set('progress', 'Searching for artists in Spotify...');
 
@@ -131,7 +133,8 @@ export default Ember.Controller.extend({
           }.bind(this))
           .then(function() {
             this.set('progress', 'Creating playlist \''+playlistTitle+'\'...');
-            $.post('http://localhost:8000/api/v1/spotify/users/playlists?title='+encodeURIComponent(playlistTitle)+'&event='+encodeURIComponent(event))
+            $.post('http://localhost:8000/api/v1/spotify/users/playlists?title='+encodeURIComponent(playlistTitle)+
+                          '&event='+encodeURIComponent(event)+'&date='+encodeURIComponent(date)+'&location='+encodeURIComponent(location))
               .then(function(response2){
                 this.set('progress', 'Adding tracks...');
                 $.post('http://localhost:8000/api/v1/spotify/users/playlists/tracks?playlist_id='+response2.playlist_id)
