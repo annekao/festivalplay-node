@@ -1,4 +1,4 @@
-require('dotenv').config({silent: true});
+require('dotenv').config();
 
 var express = require('express');
 var request = require('request');
@@ -222,6 +222,6 @@ app.post('/api/v1/spotify/users/playlists/tracks', function(req, res) {
 
 });
 
-app.listen(8000, function() {
+app.listen(process.env.PORT || 8000, function() {
   console.log('Listening on port 8000');
 });
