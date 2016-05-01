@@ -2,12 +2,18 @@ require('dotenv').config({silent: true});
 
 var express = require('express');
 var request = require('request');
+var rp = require('request-promise');
 var bodyParser = require('body-parser');
 var app = express();
 
-var artist_ids = [];
+var accessToken = undefined;
+var userId = '';
+var username = '';
+var artists = [];
+var trackIds = [];
 
 var User = require('./models/user');
+var Playlist = require('./models/playlist');
 
 app.use(bodyParser.json()); // for parsing application/json
 
@@ -17,31 +23,37 @@ app.all('*', function(req, res, next) {
   next();
 });
 
-app.get('/api/v1/spotify/me', function(req, res) {
-  var accessToken = req.query.access_token;
+app.post('/api/v1/spotify/me', function(req, res) {
+  accessToken = req.query.access_token;
 
   var options= {
     url: 'https://api.spotify.com/v1/me',
     headers: {
       'Authorization': 'Bearer ' + accessToken
     }
-  }
+  };
+
   request(options, function(err, resp, body) {
     var data = JSON.parse(body);
 
-    if (body.error) {
-      console.log(body);
-      res.send(body);
+    if (data.error) {
+      console.log(data);
+      res.send(data);
+      return;
     }
 
+    username = data.id;
     User.findOrCreate({
       where: {
-        username: data.id,
+        username: username
+      },
+      defaults: {
         spotify_page: data.external_urls.spotify,
-        image_url: data.images[0].url,
+        image_url: data.images[0].url
       }
     })
     .spread(function(user, created) {
+      userId = user.id;
       res.send(user);
     });
   });
@@ -84,14 +96,118 @@ app.get('/api/v1/spotify/search', function(req, res) {
   request('https://api.spotify.com/v1/search?q='+query+'&type=artist', function(err, resp, body) {
     var data = JSON.parse(body);
 
-    if (data.artists.items.length == 0) {
-      error_msg = query + " not found in Spotify!";
+    if (data.artists && data.artists.items.length == 0) {
+      error_msg = "Could not find artist, " + query + ", on Spotify.";
     } else {
-      artist_ids.push(data.artists.items[0].id);
+      artists.push({
+        id: data.artists.items[0].id,
+        name: data.artists.items[0].name
+      });
     }
 
     res.send({
       error: error_msg
+    });
+  });
+});
+
+app.get('/api/v1/spotify/artists/top-tracks', function(req, res) {
+  var num_tracks = req.query.tracks;
+  var promises = [];
+  var error_msg = [];
+
+  artists.forEach(function(artist) {
+    promises.push(rp('https://api.spotify.com/v1/artists/'+artist.id+'/top-tracks?country=US', function(err, resp, body) {
+      var data = JSON.parse(body);
+
+      if (data.tracks) {
+        var length = num_tracks;
+        if (data.tracks.length < length) {
+          error_msg.push(artist.name + ' only has ' + data.tracks.length + ' tracks on Spotify.');
+          length = data.tracks.length;
+        }
+
+        for (var i = 0; i < length; i++) {
+          trackIds.push('spotify:track:'+data.tracks[i].id);
+        }
+      }
+    }));
+  });
+
+  Promise.all(promises).then(function() {
+    res.send({
+      error: error_msg
+    });
+  });
+});
+
+app.post('/test', function(req,res) {
+  res.send(req.body);
+}) ;
+
+app.post('/api/v1/spotify/users/playlists', function(req, res) {
+  var playlistTitle = decodeURI(req.query.title);
+  var eventTitle = decodeURI(req.query.event);
+
+  var options= {
+    method: 'POST',
+    url: 'https://api.spotify.com/v1/users/'+username+'/playlists',
+    headers: {
+      'Authorization': 'Bearer ' + accessToken
+    },
+    contentType: 'application/json',
+    body: JSON.stringify({name: playlistTitle})
+  };
+
+  request(options, function(err, resp, body) {
+    var data = JSON.parse(body);
+
+    if (data.error) {
+      console.log(data);
+      res.send(data);
+      return;
+    }
+
+    Playlist.create({
+        user_id: userId,
+        title: playlistTitle,
+        event_title: eventTitle,
+        playlist_id: data.id,
+        playlist_url: data.href
+      })
+      .then(function(playlist) {
+        res.send(playlist);
+      });
+  });
+
+});
+
+app.post('/api/v1/spotify/users/playlists/tracks', function(req, res) {
+  // spotify request only adds 100 tracks
+  var trackGroup = [], size = 100;
+  var tracks_size = trackIds.length;
+  while(trackIds.length > 0) {
+    trackGroup.push(trackIds.splice(0, size));
+  }
+  var promises = [];
+
+  trackGroup.forEach(function(tracks) {
+    var options= {
+      method: 'POST',
+      url: 'https://api.spotify.com/v1/users/'+username+'/playlists/'+req.query.playlist_id+'/tracks',
+      headers: {
+        'Authorization': 'Bearer ' + accessToken
+      },
+      contentType: 'application/json',
+      body: JSON.stringify({uris: tracks})
+    };
+
+    promises.push(rp(options));
+  });
+
+  Promise.all(promises).then(function() {
+    res.send({
+      tracks_size: tracks_size
     });
   });
 

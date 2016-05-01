@@ -10,10 +10,11 @@ export default Ember.Controller.extend({
   step2: false,
   step3: false,
   step4: false,
+  playlistTitle: '',
   range: 6,
   creating: false,
   progress: '',
-  errors: false,
+  complete: false,
   errorMessages: [],
 
   actions: {
@@ -27,6 +28,23 @@ export default Ember.Controller.extend({
     },
     
     closeModal() {
+      if(this.get('complete')) {
+        // reset form
+        this.set(eventResults, []);
+        this.set(selectedEvent, '');
+        this.set(artistResults, []);
+        this.set(selectedArtists, []);
+        this.set(step1, true);
+        this.set(step2, false);
+        this.set(step3, false);
+        this.set(step4, false);
+        this.set(playlistTitle, '');
+        this.set(range, 6);
+        this.set(creating, false);
+        this.set(progress, '');
+        this.set(complete, false);
+        this.set(errorMessages, []);
+      }
       this.set('isModalOpen', false);
     },
 
@@ -34,12 +52,14 @@ export default Ember.Controller.extend({
       this.set('step1', true);
       this.set('step2', false);
       this.set('selectedEvent', '');
+      this.set('eventResults', '');
     },
 
     step2() {
       this.set('step2', true);
       this.set('step1', false);
       this.set('step3', false);
+      this.set('selectedEvent', '');
       if(this.get('selectedEvent') === '') {
         $.getJSON('http://localhost:8000/api/v1/seatgeek/events?q='+this.get('search'))
           .then(function(response){
@@ -66,6 +86,9 @@ export default Ember.Controller.extend({
         this.set('step3', true);
         this.set('step2', false);
         this.set('step4', false);
+        this.set('artistResults', []);
+        this.set('selectedArtists', []);
+
         this.get('selectedEvent').artists.forEach(function(artist) {
           this.get('artistResults').addObject(artist.name);
           this.get('selectedArtists').addObject(artist.name);
@@ -74,6 +97,7 @@ export default Ember.Controller.extend({
     },
 
     step4() {
+      this.set('playlistTitle', this.get('selectedEvent').title);
       this.set('step4', true);
       this.set('step3', false);
     },
@@ -81,21 +105,44 @@ export default Ember.Controller.extend({
     createPlaylist() {
       this.set('creating', true);
       this.set('step4', false);
+      var promises = [];
+      var playlistTitle = this.get('playlistTitle');
+      var event = this.get('selectedEvent').title;
 
       this.set('progress', 'Searching for artists in Spotify...');
 
       this.get('selectedArtists').forEach(function(artist) {
-        $.getJSON('http://localhost:8000/api/v1/spotify/search?q='+artist)
+        promises.push($.getJSON('http://localhost:8000/api/v1/spotify/search?q='+encodeURIComponent(artist))
           .then(function(response){
             if (response.error) {
-              this.set('errors', true);
               this.get('errorMessages').addObject(response.error);
             }
+          }.bind(this)));
+      }.bind(this));
+
+
+      Promise.all(promises).then(function() {
+        this.set('progress', 'Finding the top ' + this.get('range') + ' tracks for each artist...');
+        $.getJSON('http://localhost:8000/api/v1/spotify/artists/top-tracks?tracks='+this.get('range'))
+          .then(function(response){
+            if (response.error.length > 0) {
+              this.get('errorMessages').pushObjects(response.error.toArray());
+            }
+          }.bind(this))
+          .then(function() {
+            this.set('progress', 'Creating playlist \''+playlistTitle+'\'...');
+            $.post('http://localhost:8000/api/v1/spotify/users/playlists?title='+encodeURIComponent(playlistTitle)+'&event='+encodeURIComponent(event))
+              .then(function(response2){
+                this.set('progress', 'Adding tracks...');
+                $.post('http://localhost:8000/api/v1/spotify/users/playlists/tracks?playlist_id='+response2.playlist_id)
+                  .then(function(response3) {
+                    this.set('progress', 'Added '+response3.tracks_size+' tracks to playlist \''+playlistTitle+'\'');
+                    this.set('complete', true);
+                  }.bind(this));
+              }.bind(this));
           }.bind(this));
       }.bind(this));
 
-      this.set('progress', 'Finding the top ' + this.get('range') + ' tracks for each artist...');
-      this.set('progress', 'Creating playlist...');
     }
   }
 });

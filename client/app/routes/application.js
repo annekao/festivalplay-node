@@ -19,13 +19,13 @@ export default Ember.Route.extend({
   model() {
     var params = getHashParams();
     if (params.access_token !== undefined) {
-      return $.getJSON('http://localhost:8000/api/v1/spotify/me?access_token='+params.access_token)
+      return $.post('http://localhost:8000/api/v1/spotify/me?access_token='+params.access_token)
         .then(function(response){
           setAccessToken(params.access_token);
           return response;
       });
     } else if((new Date()).getTime() < localStorage.getItem('access_token_expires')) {
-      return $.getJSON('http://localhost:8000/api/v1/spotify/me?access_token='+localStorage.getItem('access_token'))
+      return $.post('http://localhost:8000/api/v1/spotify/me?access_token='+localStorage.getItem('access_token'))
         .then(function(response){
           return response;
         });

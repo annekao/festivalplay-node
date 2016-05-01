@@ -44,6 +44,7 @@
                     {{/md-collection}}
                 {{else}}
                     {{md-loader}}
+                    If you've been waiting for a while, try being more specific with your search!
                 {{/if}}
             </div>
             <div class="modal-footer">
@@ -90,7 +91,7 @@
                 <div class="modal-content">
                     <h4>Step 4: Settings</h4>
                     Playlist title:
-                    {{md-input class="col s12 input-adjust" value=selectedEvent.title validate=true required=true}}
+                    {{md-input class="col s12 input-adjust" value=playlistTitle validate=true required=true}}
                     Number of songs per artist:
                     <p class="range-field">
                         {{input value=range type="range" min="1" max="10" }}
@@ -113,9 +114,20 @@
         {{#if creating}}
             <div class="modal-content">
                 <h4>{{progress}}</h4>
-                {{md-loader}}
-                {{#if errors}}
-                    {{errorMessages}}
+                {{#if complete}}
+                    <b>You can view your playlist on our home page or in your Spotify account!</b><br>
+                {{else}}
+                    {{md-loader}}
+                {{/if}}
+                {{#each errorMessages as |error|}}
+                    {{error}}<br>
+                {{/each}}
+                {{#if complete}}
+                    <div class="modal-footer">
+                        <a class="modal-action modal-close waves-effect waves-red btn-flat cancel-button" {{action 'closeModal'}}>
+                            Close
+                        </a>
+                    </div>
                 {{/if}}
             </div>
         {{/if}}
