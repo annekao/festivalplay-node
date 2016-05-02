@@ -13,6 +13,11 @@ module.exports = sequelize.define('user', {
   image_url: {
     type: Sequelize.STRING,
     field: 'image_url'
+  },
+  playlist_count: {
+    type: Sequelize.INTEGER,
+    field: 'playlist_count',
+    defaultValue: 0
   }
 }, {
   timestamps: false

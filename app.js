@@ -1,16 +1,12 @@
 require('dotenv').config();
 
 var express = require('express');
+var session = require('express-session');
+var cookieParser = require('cookie-parser');
 var request = require('request');
 var rp = require('request-promise');
 var bodyParser = require('body-parser');
-var app = express();
 
-var accessToken = undefined;
-var userId = '';
-var username = '';
-var artists = [];
-var trackIds = [];
 var User = require('./models/user');
 var Event = require('./models/event');
 var Playlist = require('./models/playlist');
@@ -18,21 +14,34 @@ var Playlist = require('./models/playlist');
 Playlist.belongsTo(User, {foreignKey: 'user_id'})
 Playlist.belongsTo(Event, {foreignKey: 'event_id'});
 
+var app = express();
 app.use(bodyParser.json()); // for parsing application/json
 
+app.use(cookieParser());
+app.use(session({
+  secret: 'randomstringgoeshere',  //need to learn what this does
+  resave: true,
+  saveUninitialized: true,
+  cookie: {
+    maxAge: 60*60*1000
+  }
+}));
+
 app.all('*', function(req, res, next) {
-  res.header("Access-Control-Allow-Origin", "*");
+  res.header("Access-Control-Allow-Origin", process.env.ACCESS_ORIGIN);
+  res.header('Access-Control-Allow-Methods', 'DELETE');
   res.header("Access-Control-Allow-Headers", "X-Requested-With");
+  res.header("Access-Control-Allow-Credentials", "true");
   next();
 });
 
 app.post('/api/v1/spotify/me', function(req, res) {
-  accessToken = req.query.access_token;
+  req.session.accessToken = req.query.access_token;
 
   var options= {
     url: 'https://api.spotify.com/v1/me',
     headers: {
-      'Authorization': 'Bearer ' + accessToken
+      'Authorization': 'Bearer ' + req.session.accessToken
     }
   };
 
@@ -41,14 +50,16 @@ app.post('/api/v1/spotify/me', function(req, res) {
 
     if (data.error) {
       console.log(data);
-      res.send(data);
+      res.send({
+        success: false,
+        error: data
+      });
       return;
     }
 
-    username = data.id;
     User.findOrCreate({
       where: {
-        username: username
+        username: data.id
       },
       defaults: {
         spotify_page: data.external_urls.spotify,
@@ -56,17 +67,213 @@ app.post('/api/v1/spotify/me', function(req, res) {
       }
     })
     .spread(function(user, created) {
-      userId = user.id;
-      res.send(user);
+      if(!user) {
+        return res.json({
+          success: false,
+          error: 'User not found or created'
+        });
+      }
+      req.session.user = user;
+      res.send({
+        success: true,
+        user: user
+      });
     });
   });
 
 });
 
+app.get('/api/v1/admin', function(req, res) {
+  if (req.query.u=='admin' && req.query.p=='laravel') {
+    req.session.admin = true;
+    res.send({
+      success: req.session.admin
+    })
+  } else {
+    req.session.admin = true;
+    res.send({
+      success: req.session.admin
+    });
+  }
+});
+
 app.get('/api/v1/playlists', function(req, res) {
   Playlist.findAll(({ include: [User, Event]})).then(function(playlists) {
-    res.send(playlists);
+    if (!playlists) {
+      return res.json({
+        success: false,
+        error: 'Error retrieving all playlists'
+      });
+    }
+
+    res.send({
+      success: true,
+      playlists: playlists
+    });
   });
+});
+
+app.delete('/api/v1/playlists/:id', function(req, res) {
+  if (req.session.admin) {
+    Playlist.findById(req.params.id).then(function(playlist) {
+      if (!playlist) {
+        return res.json({
+          success: false,
+          error: 'Playlist not found.'
+        });
+      }
+
+      Event.findById(playlist.event_id).then(function(event) {
+        event.playlist_count--;
+        event.save();
+      });
+
+      User.findById(playlist.user_id).then(function(user) {
+        user.playlist_count--;
+        user.save();
+      });
+
+      playlist.destroy().then(function(){
+        res.send({
+          success: true
+        });
+      });
+
+    });
+  } else {
+    return res.json({
+      success: false,
+      error: 'Not authorized.'
+    });
+  }
+});
+
+app.get('/api/v1/users', function(req, res) {
+  if (req.session.admin) {
+    User.findAll().then(function(users) {
+      if (!users) {
+        return res.json({
+          success: false,
+          error: 'Error retrieving all users'
+        });
+      }
+
+      res.send({
+        success: true,
+        users: users
+      });
+    });
+  } else {
+    return res.json({
+      success: false,
+      error: 'Not authorized.'
+    });
+  }
+});
+
+app.delete('/api/v1/users/:id', function(req, res) {
+  if (req.session.admin) {
+    User.findById(req.params.id).then(function(user) {
+      if (!user) {
+        return res.json({
+          success: false,
+          error: 'User not found.'
+        });
+      }
+
+      Playlist.findAll({
+        where: {
+          user_id: user.id
+        }
+      }).then(function(playlists) {
+        if (playlists) {
+          playlists.forEach(function (playlist) {
+            Event.findById(playlist.event_id).then(function(event) {
+              event.playlist_count--;
+              event.save();
+            });
+            playlist.destroy();
+          });
+        }
+      });
+
+      user.destroy().then(function(){
+        res.send({
+          success: true
+        });
+      });
+
+    });
+  } else {
+    return res.json({
+      success: false,
+      error: 'Not authorized.'
+    });
+  }
+});
+
+app.get('/api/v1/events', function(req, res) {
+  if (req.session.admin) {
+    Event.findAll().then(function(events) {
+      if (!events) {
+        return res.json({
+          success: false,
+          error: 'Error retrieving all events'
+        });
+      }
+
+      res.send({
+        success: true,
+        events: events
+      });
+    });
+  } else {
+    res.send({
+      success: false,
+      error: 'Not authorized.'
+    });
+  }
+});
+
+app.delete('/api/v1/events/:id', function(req, res) {
+  if (req.session.admin) {
+    Event.findById(req.params.id).then(function(event) {
+      if (!event) {
+        return res.json({
+          success: false,
+          error: 'Event not found.'
+        });
+      }
+
+      Playlist.findAll({
+        where: {
+          event_id: event.id
+        }
+      }).then(function(playlists) {
+        if (playlists) {
+          playlists.forEach(function (playlist) {
+            User.findById(playlist.user_id).then(function(user) {
+              user.playlist_count--;
+              user.save();
+            });
+            playlist.destroy();
+          });
+        }
+      });
+
+      event.destroy().then(function(){
+        res.send({
+          success: true
+        });
+      });
+
+    });
+  } else {
+    return res.json({
+      success: false,
+      error: 'Not authorized.'
+    });
+  }
 });
 
 app.get('/api/v1/seatgeek/events', function(req, res) {
@@ -75,6 +282,14 @@ app.get('/api/v1/seatgeek/events', function(req, res) {
   request('https://api.seatgeek.com/2/events?q='+query, function(err, resp, body) {
     var data = JSON.parse(body);
     var events = [];
+    if (data.error) {
+      console.log(data);
+      res.send({
+        success: false,
+        error: data
+      });
+      return;
+    }
 
     data.events.forEach(function(event) {
       if (event.title.toLowerCase().includes(query)) {
@@ -89,7 +304,10 @@ app.get('/api/v1/seatgeek/events', function(req, res) {
       }
     });
 
-    res.send(events);
+    res.send({
+      success: true,
+      events: events
+    });
   });
 
 });
@@ -101,16 +319,30 @@ app.get('/api/v1/spotify/search', function(req, res) {
   request('https://api.spotify.com/v1/search?q='+query+'&type=artist', function(err, resp, body) {
     var data = JSON.parse(body);
 
+    if (data.error) {
+      console.log(data);
+      res.send({
+        success: false,
+        error: data
+      });
+      return;
+    }
+
+    if (req.session.artists === undefined) {
+      req.session.artists = [];
+    }
+
     if (data.artists && data.artists.items.length == 0) {
       error_msg = "Could not find artist, " + query + ", on Spotify.";
     } else {
-      artists.push({
+      req.session.artists.push({
         id: data.artists.items[0].id,
         name: data.artists.items[0].name
       });
     }
 
     res.send({
+      success: true,
       error: error_msg
     });
   });
@@ -120,11 +352,28 @@ app.get('/api/v1/spotify/artists/top-tracks', function(req, res) {
   var num_tracks = req.query.tracks;
   var promises = [];
   var error_msg = [];
-  trackIds = [];
+  req.session.trackIds = [];
 
-  artists.forEach(function(artist) {
+  if (req.session.artists === undefined || req.session.artists.length == 0) {
+    res.send({
+      success: false,
+      error: "No artists selected"
+    });
+    return;
+  }
+
+  req.session.artists.forEach(function(artist) {
     promises.push(rp('https://api.spotify.com/v1/artists/'+artist.id+'/top-tracks?country=US', function(err, resp, body) {
       var data = JSON.parse(body);
+
+      if (data.error) {
+        console.log(data);
+        res.send({
+          success: false,
+          error: data
+        });
+        return;
+      }
 
       if (data.tracks) {
         var length = num_tracks;
@@ -134,16 +383,17 @@ app.get('/api/v1/spotify/artists/top-tracks', function(req, res) {
         }
 
         for (var i = 0; i < length; i++) {
-          trackIds.push('spotify:track:'+data.tracks[i].id);
+          req.session.trackIds.push('spotify:track:'+data.tracks[i].id);
         }
       }
     }));
   });
 
-  artists = [];
+  req.session.artists = [];
 
   Promise.all(promises).then(function() {
     res.send({
+      success: true,
       error: error_msg
     });
   });
@@ -156,9 +406,9 @@ app.post('/api/v1/spotify/users/playlists', function(req, res) {
 
   var options= {
     method: 'POST',
-    url: 'https://api.spotify.com/v1/users/'+username+'/playlists',
+    url: 'https://api.spotify.com/v1/users/'+req.session.user.username+'/playlists',
     headers: {
-      'Authorization': 'Bearer ' + accessToken
+      'Authorization': 'Bearer ' + req.session.accessToken
     },
     contentType: 'application/json',
     body: JSON.stringify({name: playlistTitle})
@@ -169,7 +419,10 @@ app.post('/api/v1/spotify/users/playlists', function(req, res) {
 
     if (data.error) {
       console.log(data);
-      res.send(data);
+      res.send({
+        success: false,
+        error: data
+      });
       return;
     }
 
@@ -181,15 +434,43 @@ app.post('/api/v1/spotify/users/playlists', function(req, res) {
         }
       })
       .spread(function(event, created) {
+        if (!event) {
+          return res.json({
+            success: false,
+            error: 'Event not found or created'
+          });
+        }
         Playlist.create({
-            user_id: userId,
+            user_id: req.session.user.id,
             title: playlistTitle,
             event_id: event.id,
             playlist_id: data.id,
             playlist_url: data.href
           })
           .then(function(playlist) {
-            res.send(playlist);
+            if(!playlist) {
+              return res.json({
+                error: 'Playlist not created'
+              });
+            }
+
+            event.playlist_count++;
+            event.save();
+            User.findById(req.session.user.id).then(function(user){
+              if (!user) {
+                return res.json({
+                  success: false,
+                  error: 'User not found. Did not update playcount'
+                });
+              }
+              user.playlist_count++;
+              user.save();
+            });
+            req.session.playlist_id = playlist.playlist_id;
+
+            res.send({
+              success: true
+            });
           });
       });
   });
@@ -198,28 +479,39 @@ app.post('/api/v1/spotify/users/playlists', function(req, res) {
 app.post('/api/v1/spotify/users/playlists/tracks', function(req, res) {
   // spotify request only adds 100 tracks
   var trackGroup = [], size = 100;
-  var tracks_size = trackIds.length;
-  while(trackIds.length > 0) {
-    trackGroup.push(trackIds.splice(0, size));
+  var tracks_size = req.session.trackIds.length;
+  while(req.session.trackIds.length > 0) {
+    trackGroup.push(req.session.trackIds.splice(0, size));
   }
   var promises = [];
 
   trackGroup.forEach(function(tracks) {
     var options= {
       method: 'POST',
-      url: 'https://api.spotify.com/v1/users/'+username+'/playlists/'+req.query.playlist_id+'/tracks',
+      url: 'https://api.spotify.com/v1/users/'+req.session.user.username+'/playlists/'+req.session.playlist_id+'/tracks',
       headers: {
-        'Authorization': 'Bearer ' + accessToken
+        'Authorization': 'Bearer ' + req.session.accessToken
       },
       contentType: 'application/json',
       body: JSON.stringify({uris: tracks})
     };
 
-    promises.push(rp(options));
+    promises.push(rp(options, function(err, resp, body){
+      var data = JSON.parse(body);
+      if (data.error) {
+        console.log(data);
+        res.send({
+          success: false,
+          error: data
+        });
+        return;
+      }
+    }));
   });
 
   Promise.all(promises).then(function() {
     res.send({
+      success: true, 
       tracks_size: tracks_size
     });
   });

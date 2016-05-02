@@ -13,6 +13,11 @@ module.exports = sequelize.define('event', {
   date: {
     type: Sequelize.STRING,
     field: 'date'
+  },
+  playlist_count: {
+    type: Sequelize.INTEGER,
+    field: 'playlist_count',
+    defaultValue: 0
   }
 },{
   timestamps: false
