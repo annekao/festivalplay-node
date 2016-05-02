@@ -98,7 +98,10 @@ app.get('/api/v1/admin', function(req, res) {
 });
 
 app.get('/api/v1/playlists', function(req, res) {
-  Playlist.findAll(({ include: [User, Event]})).then(function(playlists) {
+  Playlist.findAll(({ 
+    include: [User, Event], 
+    order: 'createdAt DESC' 
+  })).then(function(playlists) {
     if (!playlists) {
       return res.json({
         success: false,
@@ -150,7 +153,7 @@ app.delete('/api/v1/playlists/:id', function(req, res) {
 
 app.get('/api/v1/users', function(req, res) {
   if (req.session.admin) {
-    User.findAll().then(function(users) {
+    User.findAll({ order: 'createdAt DESC' }).then(function(users) {
       if (!users) {
         return res.json({
           success: false,
@@ -214,7 +217,7 @@ app.delete('/api/v1/users/:id', function(req, res) {
 
 app.get('/api/v1/events', function(req, res) {
   if (req.session.admin) {
-    Event.findAll().then(function(events) {
+    Event.findAll({ order: 'createdAt DESC' }).then(function(events) {
       if (!events) {
         return res.json({
           success: false,
@@ -278,6 +281,7 @@ app.delete('/api/v1/events/:id', function(req, res) {
 
 app.get('/api/v1/seatgeek/events', function(req, res) {
   var query = req.query.q;
+  req.session.artists = [];
 
   request('https://api.seatgeek.com/2/events?q='+query, function(err, resp, body) {
     var data = JSON.parse(body);
@@ -309,7 +313,6 @@ app.get('/api/v1/seatgeek/events', function(req, res) {
       events: events
     });
   });
-
 });
 
 app.get('/api/v1/spotify/search', function(req, res) {
@@ -326,10 +329,6 @@ app.get('/api/v1/spotify/search', function(req, res) {
         error: data
       });
       return;
-    }
-
-    if (req.session.artists === undefined) {
-      req.session.artists = [];
     }
 
     if (data.artists && data.artists.items.length == 0) {
