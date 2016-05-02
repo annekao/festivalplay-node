@@ -15,6 +15,9 @@ var User = require('./models/user');
 var Event = require('./models/event');
 var Playlist = require('./models/playlist');
 
+Playlist.belongsTo(User, {foreignKey: 'user_id'})
+Playlist.belongsTo(Event, {foreignKey: 'event_id'});
+
 app.use(bodyParser.json()); // for parsing application/json
 
 app.all('*', function(req, res, next) {
@@ -61,7 +64,7 @@ app.post('/api/v1/spotify/me', function(req, res) {
 });
 
 app.get('/api/v1/playlists', function(req, res) {
-  Playlist.findAll().then(function(playlists) {
+  Playlist.findAll(({ include: [User, Event]})).then(function(playlists) {
     res.send(playlists);
   });
 });
@@ -75,15 +78,10 @@ app.get('/api/v1/seatgeek/events', function(req, res) {
 
     data.events.forEach(function(event) {
       if (event.title.toLowerCase().includes(query)) {
-        var date = new Date(event.datetime_utc);
-        var months = ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December'];
-        var days = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
-
         events.push({
           id: event.id,
           title: event.title,
           date: event.datetime_utc,
-          readableDate: days[date.getDay()] + ', ' + months[date.getMonth()] + ' ' + date.getDate() + ', ' + date.getFullYear(),
           location: event.venue.display_location,
           artists: event.performers,
           selected: false
@@ -177,9 +175,7 @@ app.post('/api/v1/spotify/users/playlists', function(req, res) {
 
     Event.findOrCreate({
         where: {
-          title: eventTitle
-        },
-        defaults: {
+          title: eventTitle,
           date: decodeURIComponent(req.query.date),
           location: decodeURIComponent(req.query.location)
         }
