@@ -511,7 +511,7 @@ app.post('/api/v1/spotify/users/playlists/tracks', function(req, res) {
 
   Promise.all(promises).then(function() {
     res.send({
-      success: true, 
+      success: true,
       tracks_size: tracks_size
     });
   });
