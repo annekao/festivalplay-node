@@ -84,7 +84,7 @@ app.post('/api/v1/spotify/me', function(req, res) {
 });
 
 app.get('/api/v1/admin', function(req, res) {
-  if (req.query.u=='admin' && req.query.p=='laravel') {
+  if (req.query.u==process.env.ADMIN_U && req.query.p==process.env.ADMIN_PW) {
     req.session.admin = true;
     res.send({
       success: req.session.admin
