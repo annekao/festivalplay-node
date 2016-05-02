@@ -5,4 +5,4 @@ deploy:
   provider: heroku
   api_key:
     secure: 'dc7dbbf1-612e-4c4f-a3b7-243b11b57ff5'
-    app: festivalplay-api
+  app: festivalplay-api
