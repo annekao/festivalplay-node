@@ -90,7 +90,7 @@ app.get('/api/v1/admin', function(req, res) {
       success: req.session.admin
     })
   } else {
-    req.session.admin = true;
+    req.session.admin = false;
     res.send({
       success: req.session.admin
     });
