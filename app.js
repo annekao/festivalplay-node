@@ -99,7 +99,6 @@ app.get('/api/v1/seatgeek/events', function(req, res) {
 app.get('/api/v1/spotify/search', function(req, res) {
   var query = req.query.q;
   var error_msg = undefined;
-  artists = [];
 
   request('https://api.spotify.com/v1/search?q='+query+'&type=artist', function(err, resp, body) {
     var data = JSON.parse(body);
@@ -142,6 +141,8 @@ app.get('/api/v1/spotify/artists/top-tracks', function(req, res) {
       }
     }));
   });
+
+  artists = [];
 
   Promise.all(promises).then(function() {
     res.send({
