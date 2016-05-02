@@ -292,7 +292,7 @@ app.get('/api/v1/seatgeek/events', function(req, res) {
     }
 
     data.events.forEach(function(event) {
-      if (event.title.toLowerCase().includes(query)) {
+      if (event.title.toLowerCase().includes(query.toLowerCase())) {
         events.push({
           id: event.id,
           title: event.title,
