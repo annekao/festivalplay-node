@@ -281,7 +281,6 @@ app.delete('/api/v1/events/:id', function(req, res) {
 
 app.get('/api/v1/seatgeek/events', function(req, res) {
   var query = req.query.q;
-  req.session.artists = [];
 
   request('https://api.seatgeek.com/2/events?q='+query, function(err, resp, body) {
     var data = JSON.parse(body);
@@ -316,30 +315,38 @@ app.get('/api/v1/seatgeek/events', function(req, res) {
 });
 
 app.get('/api/v1/spotify/search', function(req, res) {
-  var query = req.query.q;
-  var error_msg = undefined;
+  var artists = req.query.artists;
+  var error_msg = [];
+  req.session.artists = [];
+  var promises = [];
 
-  request('https://api.spotify.com/v1/search?q='+query+'&type=artist', function(err, resp, body) {
-    var data = JSON.parse(body);
+  artists.forEach(function(artist) {
+    if (artist.checked === 'true') {
+      promises.push(rp('https://api.spotify.com/v1/search?q='+artist.name+'&type=artist', function(err, resp, body){
+        var data = JSON.parse(body);
+        
+        if (data.error) {
+          console.log(data);
+          res.send({
+            success: false,
+            error: data
+          });
+          return;
+        }
 
-    if (data.error) {
-      console.log(data);
-      res.send({
-        success: false,
-        error: data
-      });
-      return;
+        if (data.artists && data.artists.items.length == 0) {
+          error_msg.push("Could not find artist, " + artist.name + ", on Spotify.");
+        } else {
+          req.session.artists.push({
+            id: data.artists.items[0].id,
+            name: data.artists.items[0].name
+          });
+        }
+      }));
     }
+  });
 
-    if (data.artists && data.artists.items.length == 0) {
-      error_msg = "Could not find artist, " + query + ", on Spotify.";
-    } else {
-      req.session.artists.push({
-        id: data.artists.items[0].id,
-        name: data.artists.items[0].name
-      });
-    }
-
+  Promise.all(promises).then(function() {
     res.send({
       success: true,
       error: error_msg
