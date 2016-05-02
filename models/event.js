@@ -19,6 +19,4 @@ module.exports = sequelize.define('event', {
     field: 'playlist_count',
     defaultValue: 0
   }
-},{
-  timestamps: false
 });
