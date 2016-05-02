@@ -11,7 +11,6 @@ var userId = '';
 var username = '';
 var artists = [];
 var trackIds = [];
-
 var User = require('./models/user');
 var Event = require('./models/event');
 var Playlist = require('./models/playlist');
@@ -100,6 +99,7 @@ app.get('/api/v1/seatgeek/events', function(req, res) {
 app.get('/api/v1/spotify/search', function(req, res) {
   var query = req.query.q;
   var error_msg = undefined;
+  artists = [];
 
   request('https://api.spotify.com/v1/search?q='+query+'&type=artist', function(err, resp, body) {
     var data = JSON.parse(body);
@@ -123,6 +123,7 @@ app.get('/api/v1/spotify/artists/top-tracks', function(req, res) {
   var num_tracks = req.query.tracks;
   var promises = [];
   var error_msg = [];
+  trackIds = [];
 
   artists.forEach(function(artist) {
     promises.push(rp('https://api.spotify.com/v1/artists/'+artist.id+'/top-tracks?country=US', function(err, resp, body) {
