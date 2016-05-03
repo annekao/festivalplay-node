@@ -57,13 +57,18 @@ app.post('/api/v1/spotify/me', function(req, res) {
       return;
     }
 
+    var image = null;
+    if (data.images) {
+      image = data.images[0].url;
+    }
+
     User.findOrCreate({
       where: {
         username: data.id
       },
       defaults: {
         spotify_page: data.external_urls.spotify,
-        image_url: data.images[0].url
+        image_url: image
       }
     })
     .spread(function(user, created) {
